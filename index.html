@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Deepfake Detector</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+    <style>
+      body {
+        font-family: "Poppins", sans-serif;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #74ebd5, #acb6e5);
+        background-size: 200% 200%;
+        color: #333;
+        text-align: center;
+        animation: gradientAnimation 15s ease infinite;
+      }
+
+      @keyframes gradientAnimation {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      #header {
+        font-size: 48px;
+        font-weight: 600;
+        margin: 20px 0;
+        color: #fff;
+        text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7);
+        animation: fadeInDown 1s;
+      }
+
+      .section {
+        margin: 30px auto;
+        padding: 20px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        max-width: 800px;
+        transition: transform 0.3s;
+      }
+
+      .section:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+      }
+
+      h2 {
+        font-size: 32px;
+        margin-bottom: 10px;
+        color: #4caf50;
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+      }
+
+      p {
+        font-size: 18px;
+        line-height: 1.6;
+        color: #555;
+      }
+
+      .profile-container {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .profile {
+        flex: 1;
+        text-align: center;
+      }
+
+      .profile img {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s;
+      }
+
+      .profile img:hover {
+        transform: scale(1.1);
+      }
+
+      #upload-section {
+        padding: 30px 20px;
+      }
+
+      input[type="file"],
+      input[type="submit"] {
+        padding: 12px 20px;
+        margin: 10px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: none;
+        transition: transform 0.3s, background-color 0.3s;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      }
+
+      input[type="file"] {
+        background-color: #fff;
+        color: #333;
+      }
+
+      input[type="submit"] {
+        background-color: #4caf50;
+        color: white;
+        cursor: pointer;
+      }
+
+      input[type="submit"]:hover {
+        transform: scale(1.05);
+        background-color: #45a049;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
+      }
+
+      #loader {
+        display: none;
+        border: 16px solid #f3f3f3;
+        border-top: 16px solid #4caf50;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .result {
+        font-size: 48px;
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 15px;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+        background-color: rgba(255, 255, 255, 0.8);
+        display: inline-block;
+        animation: pop 0.5s forwards;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      }
+
+      .result.real {
+        color: green;
+        opacity: 0;
+        transform: scale(1.5);
+        animation: slideInUp 0.5s forwards, colorChangeReal 0.5s forwards;
+      }
+
+      .result.fake {
+        color: red;
+        opacity: 0;
+        transform: scale(1.5);
+        animation: slideInUp 0.5s forwards, colorChangeFake 0.5s forwards;
+      }
+
+      @keyframes slideInUp {
+        0% {
+          transform: translateY(30px);
+          opacity: 0;
+        }
+        100% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes colorChangeReal {
+        0% {
+          color: green;
+        }
+        50% {
+          color: yellowgreen;
+        }
+        100% {
+          color: lime;
+        }
+      }
+
+      @keyframes colorChangeFake {
+        0% {
+          color: red;
+        }
+        50% {
+          color: orange;
+        }
+        100% {
+          color: darkred;
+        }
+      }
+
+      @keyframes pop {
+        0% {
+          transform: scale(0.5);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+    </style>
+    <script>
+      async function detectDeepfake() {
+        const uploadInput = document.getElementById("upload");
+        const file = uploadInput.files[0];
+        const formData = new FormData();
+        formData.append("video", file);
+
+        document.getElementById("loader").style.display = "block";
+        document.getElementById("result").style.opacity = 0;
+
+        try {
+          const response = await fetch("/predict", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) throw new Error("Prediction failed");
+
+          const result = await response.json();
+          const resultElement = document.getElementById("result");
+          resultElement.innerText = `Prediction: ${result.prediction.toUpperCase()}`;
+
+          resultElement.classList.toggle("real", result.prediction === "real");
+          resultElement.classList.toggle("fake", result.prediction === "fake");
+
+        } catch (error) {
+          document.getElementById("result").innerText = "Error occurred during detection.";
+          console.error("Error:", error);
+        } finally {
+          document.getElementById("loader").style.display = "none";
+          document.getElementById("result").style.opacity = 1;
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="header">DEEPFAKE DETECTOR</div>
+
+    <div class="section" id="what-is-deepfake">
+      <h2>WHAT IS DEEPFAKE?</h2>
+      <p>
+        A deepfake is synthetic media where someone's likeness is replaced using AI,
+        especially deep learning. While sometimes fun, deepfakes can pose risks like misinformation and security threats.
+      </p>
+    </div>
+
+    <div class="section" id="about-us">
+      <h2>ABOUT US</h2>
+      <div class="profile-container">
+        <div class="profile">
+          <img src="p1.jfif" alt="Profile 1" />
+          <p>Team Member 1<br />Role: Developer</p>
+        </div>
+        <div class="profile">
+          <img src="p2.jfif" alt="Profile 2" />
+          <p>Team Member 2<br />Role: Designer</p>
+        </div>
+      </div>
+      <p>
+        We are dedicated to combating misinformation and improving digital trust through advanced deepfake detection.
+      </p>
+    </div>
+
+    <div class="section" id="user-manual">
+      <h2>USER MANUAL</h2>
+      <ul style="text-align: left">
+        <li>1. Upload an MP4 video below.</li>
+        <li>2. Click 'SUBMIT'.</li>
+        <li>3. Wait for the detection result.</li>
+      </ul>
+    </div>
+
+    <div id="upload-section" class="section">
+      <h2>UPLOAD YOUR VIDEO</h2>
+      <input type="file" id="upload" accept="video/mp4" required />
+      <input type="submit" value="SUBMIT" onclick="detectDeepfake()" />
+      <div id="loader"></div>
+      <div class="result" id="result"></div>
+    </div>
+  </body>
+</html>
